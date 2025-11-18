@@ -73,7 +73,7 @@ import BlinkIDUX
                     eventStream: BlinkIDEventStream(),
                     classFilter: self
                 )
-                await addReactNativePinglet(with: analyzer.sessionNumber)
+               await addReactNativePinglet(with: analyzer.sessionNumber)
                 
                 let scanningUxModel = await BlinkIDUXModel(
                     analyzer: analyzer,
@@ -129,7 +129,7 @@ import BlinkIDUX
                 
                 let session = try await blinkIdSdk.createScanningSession(sessionSettings: sessionSettings)
                 
-                await addReactNativePinglet(with: session.getSessionNumber())
+               await addReactNativePinglet(with: session.getSessionNumber())
                 
                 guard let frontUIImage = BlinkIdDeserializationUtilities.deserializeBase64Image(firstImage) else {
                     onReject("Could not extract the information from the first image! An image of a valid document needs to be sent.")
@@ -163,10 +163,49 @@ import BlinkIDUX
     
     private func presentScanningUI(_ model: BlinkIDUXModel, _ rootVc: UIViewController) {
         DispatchQueue.main.async {
+            print("🔷 [BlinkID] Finding topmost view controller...")
+            print("🔷 [BlinkID] Starting from: \(type(of: rootVc))")
+            print("🔷 [BlinkID] Has presented VC: \(rootVc.presentedViewController != nil)")
+            
+            // Find the topmost view controller that can actually present
+            let presentingVC = self.findTopViewController(rootVc)
+            
+            print("✅ [BlinkID] Will present from: \(type(of: presentingVC))")
+            print("🔷 [BlinkID] Presenting VC has presented VC: \(presentingVC.presentedViewController != nil)")
+            
             let viewController = UIHostingController(rootView: BlinkIDUXView(viewModel: model))
             viewController.modalPresentationStyle = .fullScreen
-            rootVc.present(viewController, animated: true)
+            
+            print("🔷 [BlinkID] Presenting BlinkID UI...")
+            presentingVC.present(viewController, animated: true) {
+                print("✅ [BlinkID] BlinkID UI presented successfully!")
+            }
         }
+    }
+    
+    private func findTopViewController(_ rootViewController: UIViewController) -> UIViewController {
+        var topViewController = rootViewController
+        
+        // Walk up the chain to find the topmost presented view controller
+        while let presented = topViewController.presentedViewController {
+            topViewController = presented
+        }
+        
+        // Handle navigation controllers
+        if let navigationController = topViewController as? UINavigationController {
+            if let visible = navigationController.visibleViewController {
+                return visible
+            }
+        }
+        
+        // Handle tab bar controllers
+        if let tabBarController = topViewController as? UITabBarController {
+            if let selected = tabBarController.selectedViewController {
+                return findTopViewController(selected)
+            }
+        }
+        
+        return topViewController
     }
     
     private func addReactNativePinglet(with sessionNumber: Int) async {
