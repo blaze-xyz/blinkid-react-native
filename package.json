@@ -98,13 +98,5 @@
         }
       ]
     ]
-  },
-  "codegenConfig": {
-    "name": "BlinkidReactNativeSpec",
-    "type": "modules",
-    "jsSrcsDir": "src",
-    "android": {
-      "javaPackageName": "com.microblink.blinkid.reactnative"
-    }
   }
 }
